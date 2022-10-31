@@ -1,24 +1,49 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, {useEffect, useState} from 'react';
+import axios from "axios";
+import ItemCards from './Components/ItemCards'
+
+
+type Results = {
+  id: number
+}
+
+async function getBooksLists(): Promise<Results[]> {
+  const url = "https://gutendex.com/books";
+  const response = await axios.get<any, any>(url);
+  return response?.data?.results;
+}
+
+async function getBooksNextLists(pageCount: number): Promise<Results[]> {
+  const url = "https://gutendex.com/books" + '?page=' + pageCount;
+  const response = await axios.get<any, any>(url);
+  return response?.data?.results;
+}
+
+
 
 function App() {
+
+  const [booksLists , setBooksLists] = useState<Results[] >([])
+  const [page, setPage] = useState(1)
+  
+  useEffect(() => {
+    (async () => {
+      const books = await getBooksLists();
+      setBooksLists(books);
+    })();
+  }, []);
+
+const handleOnScrollBottomReached = () => {
+  setPage(page + 1);
+  const pageCount = page + 1;
+  (async () => {
+      const books = await getBooksNextLists(pageCount);
+      if(booksLists?.length) setBooksLists([...booksLists, ...books]);
+    })();
+}
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{display: 'flex', justifyContent: 'center', alignContent: 'center'}} >
+      <ItemCards onBottomScrolled={handleOnScrollBottomReached} data={booksLists}/>
     </div>
   );
 }
